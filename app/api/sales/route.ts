@@ -16,8 +16,9 @@ export async function GET() {
     const sales = await db.collection("sales").find({}).sort({ date: -1 }).toArray()
 
     return NextResponse.json(sales)
-  } catch (error) {
-    return NextResponse.json({ error: "Error fetching sales" }, { status: 500 })
+  } catch (error: any) {
+    console.error(error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
@@ -56,8 +57,9 @@ export async function POST(request: Request) {
 
     const result = await db.collection("sales").insertOne(newSale)
     return NextResponse.json(result, { status: 201 })
-  } catch (error) {
-    return NextResponse.json({ error: "Error recording sale" }, { status: 500 })
+  } catch (error: any) {
+    console.error(error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 

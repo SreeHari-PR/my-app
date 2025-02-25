@@ -16,8 +16,9 @@ export async function GET() {
     const items = await db.collection("inventory").find({}).toArray()
 
     return NextResponse.json(items)
-  } catch (error) {
-    return NextResponse.json({ error: "Error fetching inventory items" }, { status: 500 })
+  } catch (error: any) {
+    console.error(error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
@@ -41,8 +42,9 @@ export async function POST(request: Request) {
 
     const result = await db.collection("inventory").insertOne(newItem)
     return NextResponse.json(result, { status: 201 })
-  } catch (error) {
-    return NextResponse.json({ error: "Error adding inventory item" }, { status: 500 })
+  } catch (error: any) {
+    console.error(error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 

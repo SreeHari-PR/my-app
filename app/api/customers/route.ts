@@ -16,7 +16,8 @@ export async function GET() {
     const customers = await db.collection("customers").find({}).toArray()
 
     return NextResponse.json(customers)
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error("Error:", error)
     return NextResponse.json({ error: "Error fetching customers" }, { status: 500 })
   }
 }
@@ -41,7 +42,8 @@ export async function POST(request: Request) {
 
     const result = await db.collection("customers").insertOne(newCustomer)
     return NextResponse.json(result, { status: 201 })
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error("Error:", error)
     return NextResponse.json({ error: "Error adding customer" }, { status: 500 })
   }
 }

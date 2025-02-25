@@ -21,8 +21,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json(customer)
-  } catch (error) {
-    return NextResponse.json({ error: "Error fetching customer" }, { status: 500 })
+  } catch (error: unknown) {
+    console.error("Error:", error)
+    return NextResponse.json({ error: "Error performing operation" }, { status: 500 })
   }
 }
 
@@ -45,8 +46,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json({ message: "Customer updated successfully" })
-  } catch (error) {
-    return NextResponse.json({ error: "Error updating customer" }, { status: 500 })
+  } catch (error: unknown) {
+    console.error("Error:", error)
+    return NextResponse.json({ error: "Error performing operation" }, { status: 500 })
   }
 }
 
@@ -67,8 +69,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
 
     return NextResponse.json({ message: "Customer deleted successfully" })
-  } catch (error) {
-    return NextResponse.json({ error: "Error deleting customer" }, { status: 500 })
+  } catch (error: unknown) {
+    console.error("Error:", error)
+    return NextResponse.json({ error: "Error performing operation" }, { status: 500 })
   }
 }
 

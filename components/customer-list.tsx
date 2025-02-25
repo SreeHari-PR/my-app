@@ -27,12 +27,12 @@ export function CustomerList() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!session) {
       router.push("/login")
-    } else if (status === "authenticated") {
-      fetchCustomers()
+      return
     }
-  }, [status, router])
+    fetchCustomers()
+  }, [session, router])
 
   const fetchCustomers = async () => {
     try {

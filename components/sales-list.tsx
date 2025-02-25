@@ -30,9 +30,13 @@ export function SalesList() {
     if (status === "unauthenticated") {
       router.push("/login")
     } else if (status === "authenticated") {
-      fetchSales()
+      if (!session?.user) {
+        router.push("/login")
+      } else {
+        fetchSales()
+      }
     }
-  }, [status, router])
+  }, [status, router, session?.user])
 
   const fetchSales = async () => {
     try {

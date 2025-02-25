@@ -62,7 +62,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ data })
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error("Error:", error)
     return NextResponse.json({ error: "Error fetching preview data" }, { status: 500 })
   }
 }

@@ -21,8 +21,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json(sale)
-  } catch (error) {
-    return NextResponse.json({ error: "Error fetching sale" }, { status: 500 })
+  } catch (error: any) {
+    console.error("Error fetching sale:", error)
+    return NextResponse.json({ error: error.message || "Error fetching sale" }, { status: 500 })
   }
 }
 
@@ -80,8 +81,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json({ message: "Sale updated successfully" })
-  } catch (error) {
-    return NextResponse.json({ error: "Error updating sale" }, { status: 500 })
+  } catch (error: any) {
+    console.error("Error updating sale:", error)
+    return NextResponse.json({ error: error.message || "Error updating sale" }, { status: 500 })
   }
 }
 
@@ -113,8 +115,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
 
     return NextResponse.json({ message: "Sale deleted successfully" })
-  } catch (error) {
-    return NextResponse.json({ error: "Error deleting sale" }, { status: 500 })
+  } catch (error: any) {
+    console.error("Error deleting sale:", error)
+    return NextResponse.json({ error: error.message || "Error deleting sale" }, { status: 500 })
   }
 }
 

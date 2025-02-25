@@ -28,6 +28,11 @@ export function InventoryList() {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
 
   useEffect(() => {
+    if (status === "loading") {
+      setIsLoading(true)
+      return
+    }
+
     if (status === "unauthenticated") {
       router.push("/login")
     } else if (status === "authenticated") {
@@ -136,6 +141,10 @@ export function InventoryList() {
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     )
+  }
+
+  if (!session) {
+    return null
   }
 
   return (
