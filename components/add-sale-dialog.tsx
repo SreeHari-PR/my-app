@@ -39,7 +39,6 @@ export function AddSaleDialog({ isOpen, onClose, onSubmit, sale }: AddSaleDialog
   const [customer, setCustomer] = useState("")
   const [total, setTotal] = useState("")
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([])
-  const [selectedItemPrice, setSelectedItemPrice] = useState<number>(0)
 
   useEffect(() => {
     fetchInventoryItems()
@@ -65,7 +64,6 @@ export function AddSaleDialog({ isOpen, onClose, onSubmit, sale }: AddSaleDialog
     if (item && quantity) {
       const selectedItem = inventoryItems.find((i) => i.name === item)
       if (selectedItem) {
-        setSelectedItemPrice(selectedItem.price)
         setTotal((selectedItem.price * Number.parseInt(quantity)).toFixed(2))
       }
     }

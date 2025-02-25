@@ -4,6 +4,12 @@ import { authOptions } from "@/lib/auth"
 import clientPromise from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
+interface ErrorResponse {
+  message: string
+  code?: string
+  stack?: string
+}
+
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions)
@@ -21,9 +27,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json(item)
-  } catch (error: any) {
-    console.error("Error fetching inventory item:", error)
-    return NextResponse.json({ error: error.message || "Error fetching inventory item" }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error("Error fetching inventory item:", errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error fetching inventory item" }, { status: 500 })
   }
 }
 
@@ -46,9 +53,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json({ message: "Item updated successfully" })
-  } catch (error: any) {
-    console.error("Error updating inventory item:", error)
-    return NextResponse.json({ error: error.message || "Error updating inventory item" }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error("Error updating inventory item:", errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error updating inventory item" }, { status: 500 })
   }
 }
 
@@ -69,9 +77,10 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
 
     return NextResponse.json({ message: "Item deleted successfully" })
-  } catch (error: any) {
-    console.error("Error deleting inventory item:", error)
-    return NextResponse.json({ error: error.message || "Error deleting inventory item" }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error("Error deleting inventory item:", errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error deleting inventory item" }, { status: 500 })
   }
 }
 

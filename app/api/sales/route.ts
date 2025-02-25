@@ -3,6 +3,12 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import clientPromise from "@/lib/mongodb"
 
+interface ErrorResponse {
+  message: string
+  code?: string
+  stack?: string
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -16,9 +22,10 @@ export async function GET() {
     const sales = await db.collection("sales").find({}).sort({ date: -1 }).toArray()
 
     return NextResponse.json(sales)
-  } catch (error: any) {
-    console.error(error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error(errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error fetching sales" }, { status: 500 })
   }
 }
 
@@ -57,9 +64,10 @@ export async function POST(request: Request) {
 
     const result = await db.collection("sales").insertOne(newSale)
     return NextResponse.json(result, { status: 201 })
-  } catch (error: any) {
-    console.error(error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error(errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error recording sale" }, { status: 500 })
   }
 }
 

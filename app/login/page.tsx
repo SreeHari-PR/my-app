@@ -36,7 +36,7 @@ export default function Login() {
         toast.success("Logged in successfully")
         router.push("/dashboard")
       }
-    } catch (error) {
+    } catch {
       toast.error("An error occurred during login")
     } finally {
       setIsLoading(false)

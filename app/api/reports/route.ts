@@ -3,10 +3,35 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import clientPromise from "@/lib/mongodb"
 import ExcelJS from "exceljs"
-import PDFDocument from "pdfkit"
+import { jsPDF } from "jspdf"
+import "jspdf-autotable"
+
+interface TableColumn {
+  header: string
+  dataKey: string
+}
+
+interface ReportData {
+  date?: string
+  item?: string
+  quantity?: number
+  customer?: string
+  total?: number
+  name?: string
+  description?: string
+  price?: number
+  totalPurchases?: number
+  totalAmount?: number
+}
+
+interface ErrorResponse {
+  message: string
+  code?: string
+  stack?: string
+}
 
 // Helper function to create Excel workbook
-async function generateExcelReport(data: any, reportType: string) {
+async function generateExcelReport(data: ReportData[], reportType: string) {
   const workbook = new ExcelJS.Workbook()
   const worksheet = workbook.addWorksheet(reportType)
 
@@ -19,7 +44,15 @@ async function generateExcelReport(data: any, reportType: string) {
         { header: "Customer", key: "customer", width: 20 },
         { header: "Total", key: "total", width: 15 },
       ]
+      // Format data
+      const salesData = data.map((sale: ReportData) => ({
+        ...sale,
+        date: sale.date ? new Date(sale.date).toLocaleDateString() : "",
+        total: sale.total ? `$${sale.total.toFixed(2)}` : "$0.00",
+      }))
+      worksheet.addRows(salesData)
       break
+
     case "items":
       worksheet.columns = [
         { header: "Name", key: "name", width: 20 },
@@ -27,95 +60,134 @@ async function generateExcelReport(data: any, reportType: string) {
         { header: "Quantity", key: "quantity", width: 10 },
         { header: "Price", key: "price", width: 15 },
       ]
+      // Format data
+      const itemsData = data.map((item: ReportData) => ({
+        ...item,
+        price: item.price ? `$${item.price.toFixed(2)}` : "$0.00",
+      }))
+      worksheet.addRows(itemsData)
       break
+
     case "customer":
       worksheet.columns = [
         { header: "Customer", key: "customer", width: 20 },
         { header: "Total Purchases", key: "totalPurchases", width: 15 },
         { header: "Total Amount", key: "totalAmount", width: 15 },
       ]
+      // Format data
+      const customerData = data.map((customer: ReportData) => ({
+        ...customer,
+        totalAmount: customer.totalAmount ? `$${customer.totalAmount.toFixed(2)}` : "$0.00",
+      }))
+      worksheet.addRows(customerData)
       break
   }
 
-  worksheet.addRows(data)
-
-  const buffer = await workbook.xlsx.writeBuffer()
-  return buffer
+  return await workbook.xlsx.writeBuffer()
 }
 
-// Helper function to create PDF document
-async function generatePDFReport(data: any, reportType: string) {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument()
-    const chunks: Buffer[] = []
+// Helper function to create PDF document using jsPDF
+async function generatePDFReport(data: ReportData[], reportType: string) {
+  const doc = new jsPDF()
 
-    doc.on("data", (chunk) => chunks.push(chunk))
-    doc.on("end", () => resolve(Buffer.concat(chunks)))
-    doc.on("error", reject)
+  // Add title
+  doc.setFontSize(16)
+  doc.text(`${reportType.toUpperCase()} REPORT`, doc.internal.pageSize.width / 2, 20, { align: "center" })
 
-    // Add title
-    doc.fontSize(16).text(`${reportType.toUpperCase()} REPORT`, { align: "center" })
-    doc.moveDown()
+  // Add date
+  doc.setFontSize(12)
+  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
 
-    // Add date
-    doc.fontSize(12).text(`Generated on: ${new Date().toLocaleDateString()}`)
-    doc.moveDown()
+  // Prepare table data based on report type
+  const columns: TableColumn[] = []
+  const rows: Record<string, string | number>[] = []
 
-    // Add table headers and data based on report type
-    switch (reportType) {
-      case "sales":
-        doc.text("Date\t\tItem\t\tQuantity\tCustomer\tTotal")
-        doc.moveDown()
-        data.forEach((sale: any) => {
-          doc.text(
-            `${new Date(sale.date).toLocaleDateString()}\t${sale.item}\t${sale.quantity}\t${sale.customer}\t$${sale.total.toFixed(2)}`,
-          )
-        })
-        break
-      case "items":
-        doc.text("Name\t\tDescription\t\tQuantity\tPrice")
-        doc.moveDown()
-        data.forEach((item: any) => {
-          doc.text(`${item.name}\t${item.description}\t${item.quantity}\t$${item.price.toFixed(2)}`)
-        })
-        break
-      case "customer":
-        doc.text("Customer\t\tTotal Purchases\tTotal Amount")
-        doc.moveDown()
-        data.forEach((customer: any) => {
-          doc.text(`${customer.customer}\t${customer.totalPurchases}\t$${customer.totalAmount.toFixed(2)}`)
-        })
-        break
-    }
+  switch (reportType) {
+    case "sales":
+      columns.push(
+        { header: "Date", dataKey: "date" },
+        { header: "Item", dataKey: "item" },
+        { header: "Quantity", dataKey: "quantity" },
+        { header: "Customer", dataKey: "customer" },
+        { header: "Total", dataKey: "total" },
+      )
+      rows.push(
+        ...data.map((sale: ReportData) => ({
+          date: sale.date ? new Date(sale.date).toLocaleDateString() : "",
+          item: sale.item || "",
+          quantity: sale.quantity || 0,
+          customer: sale.customer || "",
+          total: sale.total ? `$${sale.total.toFixed(2)}` : "$0.00",
+        })),
+      )
+      break
 
-    doc.end()
+    case "items":
+      columns.push(
+        { header: "Name", dataKey: "name" },
+        { header: "Description", dataKey: "description" },
+        { header: "Quantity", dataKey: "quantity" },
+        { header: "Price", dataKey: "price" },
+      )
+      rows.push(
+        ...data.map((item: ReportData) => ({
+          name: item.name || "",
+          description: item.description || "",
+          quantity: item.quantity || 0,
+          price: item.price ? `$${item.price.toFixed(2)}` : "$0.00",
+        })),
+      )
+      break
+
+    case "customer":
+      columns.push(
+        { header: "Customer", dataKey: "customer" },
+        { header: "Total Purchases", dataKey: "totalPurchases" },
+        { header: "Total Amount", dataKey: "totalAmount" },
+      )
+      rows.push(
+        ...data.map((customer: ReportData) => ({
+          customer: customer.customer || "",
+          totalPurchases: customer.totalPurchases || 0,
+          totalAmount: customer.totalAmount ? `$${customer.totalAmount.toFixed(2)}` : "$0.00",
+        })),
+      )
+      break
+  }
+
+  // @ts-expect-error - autotable is added by jspdf-autotable
+  doc.autoTable({
+    startY: 40,
+    head: [columns.map((col) => col.header)],
+    body: rows.map((row) => columns.map((col) => row[col.dataKey])),
+    theme: "grid",
   })
+
+  return Buffer.from(doc.output("arraybuffer"))
 }
 
 // Helper function to create DOCX content
-async function generateDOCXReport(data: any, reportType: string) {
-  // For simplicity, we'll return a text buffer that can be saved as .docx
-  // In a production environment, you'd want to use a proper DOCX library
+async function generateDOCXReport(data: ReportData[], reportType: string) {
   let content = `${reportType.toUpperCase()} REPORT\n\n`
   content += `Generated on: ${new Date().toLocaleDateString()}\n\n`
 
   switch (reportType) {
     case "sales":
       content += "Date\tItem\tQuantity\tCustomer\tTotal\n"
-      data.forEach((sale: any) => {
-        content += `${new Date(sale.date).toLocaleDateString()}\t${sale.item}\t${sale.quantity}\t${sale.customer}\t$${sale.total.toFixed(2)}\n`
+      data.forEach((sale: ReportData) => {
+        content += `${sale.date ? new Date(sale.date).toLocaleDateString() : ""}\t${sale.item || ""}\t${sale.quantity || 0}\t${sale.customer || ""}\t$${sale.total ? sale.total.toFixed(2) : "0.00"}\n`
       })
       break
     case "items":
       content += "Name\tDescription\tQuantity\tPrice\n"
-      data.forEach((item: any) => {
-        content += `${item.name}\t${item.description}\t${item.quantity}\t$${item.price.toFixed(2)}\n`
+      data.forEach((item: ReportData) => {
+        content += `${item.name || ""}\t${item.description || ""}\t${item.quantity || 0}\t$${item.price ? item.price.toFixed(2) : "0.00"}\n`
       })
       break
     case "customer":
       content += "Customer\tTotal Purchases\tTotal Amount\n"
-      data.forEach((customer: any) => {
-        content += `${customer.customer}\t${customer.totalPurchases}\t$${customer.totalAmount.toFixed(2)}\n`
+      data.forEach((customer: ReportData) => {
+        content += `${customer.customer || ""}\t${customer.totalPurchases || 0}\t$${customer.totalAmount ? customer.totalAmount.toFixed(2) : "0.00"}\n`
       })
       break
   }
@@ -142,7 +214,7 @@ export async function GET(request: Request) {
     const client = await clientPromise
     const db = client.db()
 
-    let data
+    let data: ReportData[] = []
     switch (reportType) {
       case "sales":
         data = await db.collection("sales").find({}).sort({ date: -1 }).toArray()
@@ -151,7 +223,6 @@ export async function GET(request: Request) {
         data = await db.collection("inventory").find({}).toArray()
         break
       case "customer":
-        // Aggregate customer data from sales
         data = await db
           .collection("sales")
           .aggregate([
@@ -177,9 +248,9 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Invalid report type" }, { status: 400 })
     }
 
-    let buffer
-    let filename
-    let contentType
+    let buffer: Buffer
+    let filename: string
+    let contentType: string
 
     switch (format) {
       case "xlsx":
@@ -207,9 +278,10 @@ export async function GET(request: Request) {
     response.headers.set("Content-Disposition", `attachment; filename=${filename}`)
 
     return response
-  } catch (error) {
-    console.error("Report generation error:", error)
-    return NextResponse.json({ error: "Error generating report" }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error("Report generation error:", errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error generating report" }, { status: 500 })
   }
 }
 

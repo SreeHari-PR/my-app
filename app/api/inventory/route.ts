@@ -3,6 +3,12 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import clientPromise from "@/lib/mongodb"
 
+interface ErrorResponse {
+  message: string
+  code?: string
+  stack?: string
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -16,9 +22,10 @@ export async function GET() {
     const items = await db.collection("inventory").find({}).toArray()
 
     return NextResponse.json(items)
-  } catch (error: any) {
-    console.error(error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error(errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error fetching inventory items" }, { status: 500 })
   }
 }
 
@@ -42,9 +49,10 @@ export async function POST(request: Request) {
 
     const result = await db.collection("inventory").insertOne(newItem)
     return NextResponse.json(result, { status: 201 })
-  } catch (error: any) {
-    console.error(error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error(errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error adding inventory item" }, { status: 500 })
   }
 }
 

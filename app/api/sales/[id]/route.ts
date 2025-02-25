@@ -4,6 +4,12 @@ import { authOptions } from "@/lib/auth"
 import clientPromise from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
+interface ErrorResponse {
+  message: string
+  code?: string
+  stack?: string
+}
+
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions)
@@ -21,9 +27,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json(sale)
-  } catch (error: any) {
-    console.error("Error fetching sale:", error)
-    return NextResponse.json({ error: error.message || "Error fetching sale" }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error("Error fetching sale:", errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error fetching sale" }, { status: 500 })
   }
 }
 
@@ -81,9 +88,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json({ message: "Sale updated successfully" })
-  } catch (error: any) {
-    console.error("Error updating sale:", error)
-    return NextResponse.json({ error: error.message || "Error updating sale" }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error("Error updating sale:", errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error updating sale" }, { status: 500 })
   }
 }
 
@@ -115,9 +123,10 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
 
     return NextResponse.json({ message: "Sale deleted successfully" })
-  } catch (error: any) {
-    console.error("Error deleting sale:", error)
-    return NextResponse.json({ error: error.message || "Error deleting sale" }, { status: 500 })
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse
+    console.error("Error deleting sale:", errorResponse)
+    return NextResponse.json({ error: errorResponse.message || "Error deleting sale" }, { status: 500 })
   }
 }
 
